@@ -24,12 +24,3 @@ export default function ajax(url,data={},method='GET') {
     })
 
 }
-async function reqLogin() {
-    const result = await ajax('/login',{username:'tom',password:'123'},'POST')
-
-    if(result.status===0){
-        alert('成功')
-    }else{
-        alert('失败')
-    }
-}

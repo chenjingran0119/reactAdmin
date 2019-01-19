@@ -2,7 +2,9 @@ import React, {Component} from 'react'
 import {
     Form, Icon, Input, Button,
 } from 'antd';
-
+import PropTypes from 'prop-types'
+import storangeUtils from '../../utils/storageUtils'
+import MemoryUtils from '../../utils/MemoryUtils'
 import logo from '../../assets/images/logo.png'
 import './index.less'
 import {reqLogin} from '../../api'
@@ -11,7 +13,35 @@ const Item = Form.Item
 登录的路由组件
 */
 export default  class Login extends Component {
+    state = {
+        errorMsg:''//登录失败错误提示信息
+    }
+    //登录请求
+    //要交给当前的子组件LoginForm调用
+    login = async(username,password)=>{
+        const result = await reqLogin(username,password)
+        console.log(result)
+        if(result.status===0){
+            const user = result.data
+
+            //保存user到local中
+            /*
+             直接存对象，会调用tostring方法，必须传对应的json对象
+             localStorage低版本不支持，需要用库
+             localStorage.setItem('USER_KEY',JSON.stringify(user))
+             */
+            storangeUtils.saveUser(user)//local中
+            MemoryUtils.user = user//内存中
+            //跳转到管理界面(不需要回退）
+            this.props.history.replace('/')
+        }else{//登录失败会显示一个信息
+            this.setState({
+                errorMsg:result.msg
+            })
+        }
+    }
     render() {
+        const {errorMsg}=this.state
         return (
             <div className="login">
                 <div className="login-header">
@@ -20,8 +50,13 @@ export default  class Login extends Component {
                 </div>
                 <div className="login-content">
                     <div className="login-box">
+                        <div className="error-msg-wrap">
+                            <div className={errorMsg ? "show" : ""}>
+                                {errorMsg}
+                            </div>
+                        </div>
                         <div className="title">用户登录</div>
-                        <LoginForm/>
+                        <LoginForm login={this.login}/>
                     </div>
                 </div>
             </div>
@@ -30,11 +65,14 @@ export default  class Login extends Component {
 }
 //包含<Form>被包装组件
 class LoginForm extends  React.Component{
+    static propTypes ={
+        login:PropTypes.func.isRequired
+    }
     clickLogin =()=>{
         this.props.form.validateFields(async(error,values)=>{
             if(!error){
-                console.log(values)
-                const result = await reqLogin(values)
+                const{username,password}=values
+                this.props.login(username,password)
             }else{
                 // this.props.form.resetFields()
             }
